@@ -6,13 +6,22 @@ class Cube():
             self.act_dim = act_dim
         def sample(self):
             return np.random.randint(self.act_dim)
-            
+                
+    class ObservationSpace():
+        def __init__(self, obs_dim):
+            self.obs_dim = obs_dim
+        def call(self):
+            return self.obs_dim
+        
     def __init__(self, difficulty=10):
 
         self.cube = np.zeros((3,3,6))
         self.action_dim = 12
+        self.obs_dim = (54, 6)
+
         self.difficulty = difficulty
         self.action_space = self.ActionSpace(self.action_dim)
+        self.observation_space = self.ObservationSpace(self.obs_dim)
 
         _ = self.reset()
 
@@ -75,8 +84,9 @@ class Cube():
         categorical_cube = np.zeros((54,6))
 
         flat_cube = np.copy(self.cube.ravel())
+
         for idx in range(len(flat_cube)):
-            categorical_cube[:,int(flat_cube[idx])] = 1.
+            categorical_cube[idx,int(flat_cube[idx])] = 1.
 
         return categorical_cube
 
