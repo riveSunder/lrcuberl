@@ -1,11 +1,19 @@
 import numpy as np
 
 class Cube():
+    class ActionSpace():
+        def __init__(self, act_dim):
+            self.act_dim = act_dim
+        def sample(self):
+            return np.random.randint(self.act_dim)
+            
     def __init__(self, difficulty=10):
 
         self.cube = np.zeros((3,3,6))
         self.action_dim = 12
         self.difficulty = difficulty
+        self.action_space = self.ActionSpace(self.action_dim)
+
         _ = self.reset()
 
 
@@ -85,7 +93,7 @@ class Cube():
     def get_random_action(self):
         return np.random.randint(self.action_dim)
         
-
+    
     def display_cube(self):
     
         scoot = 10
@@ -242,6 +250,7 @@ class Cube():
         new_cube[2,:,1] = np.array(temp)
 
         self.cube = new_cube
+
     def U(self):
         new_cube = np.copy(self.cube)
 
@@ -397,7 +406,7 @@ if __name__ == "__main__":
         done = False
         while not done:
             _ = env.reset()
-            obs, reward, done, info = env.step(env.get_random_action()) 
+            obs, reward, done, info = env.step(env.action_space.sample()) 
             step += 1
         print("guessed solving move once in {}".format(step))
         steps.append(step)
