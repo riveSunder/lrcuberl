@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 class Cube():
     class ActionSpace():
@@ -26,7 +27,10 @@ class Cube():
         _ = self.reset()
 
 
-    def reset(self):
+    def reset(self, difficulty=None):
+
+        if difficulty is not None:
+            self.difficulty = difficulty
 
         for face in range(6):
             self.cube[...,face] = face
@@ -120,6 +124,9 @@ class Cube():
         for row in range(3):
             print(' ' * scoot + str(self.cube[row,:,5]) + ' ' * scoot) # Up
 
+    def render(self):
+        self.display_cube()
+        time.sleep(0.01)
 
     def F(self):
         new_cube = np.copy(self.cube)
