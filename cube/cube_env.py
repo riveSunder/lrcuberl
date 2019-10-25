@@ -77,7 +77,7 @@ class Cube():
         if done:
             reward = 32
         else:
-            reward = -1
+            reward = -1.0
 
         observation = self.categorical_cube()
 

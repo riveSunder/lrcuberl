@@ -25,13 +25,13 @@ class DQN(object):
         self.env = env
         
         # hyperparameters
-        self.min_eps = torch.Tensor(np.array(0.05))
+        self.min_eps = torch.Tensor(np.array(0.02))
         self.eps = torch.Tensor(np.array(0.9))
         self.eps_decay = torch.Tensor(np.array(0.95))
-        self.lr = 1e-4
+        self.lr = 1e-5
         self.batch_size = 256
-        self.steps_per_epoch = 20000 
-        self.update_qt = 10
+        self.steps_per_epoch = 5200 
+        self.update_qt = 20
         self.epochs = epochs
         self.device = torch.device("cpu")
         self.discount = 0.96
@@ -39,12 +39,12 @@ class DQN(object):
         self.hid_dim = hid_dim
         
         # action-value networks
-        self.q = MLP(obs_dim, act_dim, hid_dim=hid_dim, act=nn.Tanh)
+        self.q = MLP(obs_dim, act_dim, hid_dim=hid_dim, act=nn.Tanh)# act=nn.Tanh)
         try:
             if (1): self.q.load_state_dict(torch.load("q_weights_{}x{}.h5".format(hid_dim[0],hid_dim[1])))
         except:
             pass
-        self.qt = MLP(obs_dim, act_dim, hid_dim=hid_dim, act=nn.Tanh)
+        self.qt = MLP(obs_dim, act_dim, hid_dim=hid_dim, act=nn.Tanh) # act=nn.Tanh)
         
         self.qt.load_state_dict(copy.deepcopy(self.q.state_dict()))
 
@@ -66,7 +66,6 @@ class DQN(object):
             l_obs, l_act, l_rew, l_next_obs, l_done = self.get_episodes()
             # update q
             loss_mean = 0.
-            loss2_mean = 0.
             batches = 0
             for batch_start in range(0,len(l_obs)-self.batch_size,\
                     self.batch_size):
@@ -83,12 +82,9 @@ class DQN(object):
                         ll_next_obs, ll_done)
                 loss.backward()
                 optimizer.step()
-                loss2 = self.compute_q_loss(ll_obs, ll_act, ll_rew, \
-                        ll_next_obs, ll_done)
 
                 batches += 1.0
                 loss_mean += loss
-                loss2_mean += loss2
             self.rewards.append((torch.sum(l_rew)/\
                     (torch.Tensor(np.array(1.)) + torch.sum(l_done)))\
                     .detach().cpu().numpy())
@@ -96,44 +92,55 @@ class DQN(object):
             # attenuate epsilon
             self.eps = torch.max(self.min_eps, self.eps*self.eps_decay)
 
-            eval_trials = 100
-            eval_r, eval_solves, eval_steps = self.evaluate(trials=eval_trials)
-
-            print("evaluation at epoch {} ".format(epoch))
-            print("mean r: {}, {} solves in {} steps over {} trials".format(\
-                    np.mean(eval_r), eval_solves, \
-                    np.sum(eval_steps), eval_trials))
-            if np.mean(eval_r) > 20 or eval_solves/eval_trials > 0.8: 
-                self.difficulty += 1
-                print("incrementing difficulty to {}".format(self.difficulty))
-
-            print("epoch {} mean episode rewards: {}, and q loss/loss {}/{}".format(\
-                    epoch, self.rewards[-1], self.losses[-1], loss2_mean/batches))
+            print("epoch {} mean episode rewards: {}, and q loss {}".format(\
+                    epoch, self.rewards[-1], self.losses[-1]))
             print("            current epsilon: {}".format(self.eps))
                     
             # maybe update qt
             if epoch % self.update_qt == 0:
+                eval_trials = 100
+                eval_r, eval_solves, eval_steps = self.evaluate(\
+                        trials=eval_trials)
+
+                print("evaluation at epoch {} ".format(epoch))
+                print("mean r: {}, {} solves in {} steps over {} trials"\
+                        .format(\
+                        np.mean(eval_r), eval_solves, \
+                        np.sum(eval_steps), eval_trials))
+                while np.mean(eval_r) > 20 or eval_solves/eval_trials >= 0.8: 
+                    self.difficulty += 1
+                    print("incrementing difficulty to {}"\
+                            .format(self.difficulty))
+                    eval_r, eval_solves, eval_steps = self.evaluate(\
+                            trials=eval_trials)
+
+                    print("evaluation at epoch {} ".format(epoch))
+                    print("mean r: {}, {} solves in {} steps over {} trials"\
+                        .format(\
+                        np.mean(eval_r), eval_solves, \
+                        np.sum(eval_steps), eval_trials))
+
                 self.qt.load_state_dict(copy.deepcopy(self.q.state_dict()))
                 for param in self.qt.parameters():
                     param.requires_grad = False
             if epoch % 100 == 0:
-                torch.save(self.q.state_dict(), "q_weights_{}x{}.h5".format(\
+                torch.save(self.q.state_dict(), "q_weights_{}x{}_pt2.h5".format(\
                         self.hid_dim[0],self.hid_dim[1]))
 
                 
-                np.save("rewards.npy", np.array(self.rewards))
+                np.save("rewards_02_pt2.npy", np.array(self.rewards))
 
     def evaluate(self, trials, difficulty=None):
     
         total_rewards = []
         total_moves = []
         solves = 0
-        max_moves = 260
+        max_moves = 200 
         render = False #True
         for trial in range(trials):
             done = False
             cube_moves = 0
-            obs = self.env.reset() #difficulty=self.difficulty)
+            obs = self.env.reset(difficulty=self.difficulty)
             total_reward = 0.0
             while not done:
                 if render: 
@@ -191,14 +198,19 @@ class DQN(object):
         l_act = torch.Tensor()
         l_next_obs = torch.Tensor()
         l_done = torch.Tensor()
+        if self.difficulty == 1:
+            max_moves = 3
+        elif self.difficulty == 2:
+            max_moves = 8
+        else:
+            max_moves = 64
 
         done = True
-
         with torch.no_grad():
             for step in range(steps):
                 if done:
                     cube_moves = 0
-                    obs = self.env.reset() #difficulty=self.difficulty)
+                    obs = self.env.reset(difficulty=self.difficulty)
                     obs = torch.Tensor(obs.ravel()).unsqueeze(0)
                     done = False
 
@@ -216,17 +228,13 @@ class DQN(object):
                 obs = torch.Tensor(obs.ravel()).unsqueeze(0)
 
                 cube_moves += 1
-
-                #if done: 
-                #    print("reward {} solved cube {} in {} moves!".format(\
-                #reward, self.difficulty, cube_moves))
-                if cube_moves > 4 * self.difficulty:
+                if cube_moves > max_moves:
                     # give up if we've gone too far from start
                     done = True
 
                 # concatenate data from current step to buffers
                 l_obs = torch.cat([l_obs, prev_obs], dim=0)
-                l_rew = torch.cat([l_rew, torch.Tensor(np.array(reward))\
+                l_rew = torch.cat([l_rew, torch.Tensor(np.array(1.* reward))\
                         .reshape(1,1)], dim=0)
                 l_act = torch.cat([l_act, torch.Tensor(np.array([action]))\
                         .reshape(1,1)], dim=0)
@@ -250,14 +258,16 @@ if __name__ == "__main__":
             epochs = int(args[cc+1])
 
     env = Cube()
-    env = gym.make("CartPole-v0")
+    #env = gym.make("CartPole-v0")
 
-    #obs_dim = env.observation_space.call()
-    #obs_dim = obs_dim[0]*obs_dim[1]
-    #act_dim = env.action_dim #Cube.action_space.sample().shape
-    obs_dim = 4
-    act_dim = 2
-    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, epochs=epochs)
+    torch.set_num_threads(1)
+
+    obs_dim = env.observation_space.call()
+    obs_dim = obs_dim[0]*obs_dim[1]
+    act_dim = env.action_dim #Cube.action_space.sample().shape
+    #obs_dim = 4
+    #act_dim = 2
+    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[64,64], epochs=epochs)
 
     if (1): torch.set_num_threads(3) 
 
