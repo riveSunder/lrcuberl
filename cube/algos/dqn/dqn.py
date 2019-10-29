@@ -25,13 +25,13 @@ class DQN(object):
         self.env = env
         
         # hyperparameters
-        self.min_eps = torch.Tensor(np.array(0.02))
+        self.min_eps = torch.Tensor(np.array(0.07))
         self.eps = torch.Tensor(np.array(0.9))
         self.eps_decay = torch.Tensor(np.array(0.95))
-        self.lr = 1e-5
+        self.lr = 1e-3
         self.batch_size = 256
         self.steps_per_epoch = 5200 
-        self.update_qt = 20
+        self.update_qt = 100
         self.epochs = epochs
         self.device = torch.device("cpu")
         self.discount = 0.96
@@ -41,7 +41,9 @@ class DQN(object):
         # action-value networks
         self.q = MLP(obs_dim, act_dim, hid_dim=hid_dim, act=nn.Tanh)# act=nn.Tanh)
         try:
-            if (1): self.q.load_state_dict(torch.load("q_weights_{}x{}.h5".format(hid_dim[0],hid_dim[1])))
+            if (1): 
+                self.q.load_state_dict(torch.load("q_weights_exp{}.h5"\
+                    .format(exp_name)))
         except:
             pass
         self.qt = MLP(obs_dim, act_dim, hid_dim=hid_dim, act=nn.Tanh) # act=nn.Tanh)
@@ -53,15 +55,14 @@ class DQN(object):
         for param in self.qt.parameters():
             param.requires_grad = False
 
-    def train(self):
+    def train(self, exp_name, start_epoch):
         
         # initialize optimizer
         optimizer = torch.optim.Adam(self.q.parameters(), lr=self.lr)
         self.rewards = []
         self.losses = []
 
-        for epoch in range(self.epochs):
-            gc.collect()
+        for epoch in range(start_epoch, start_epoch + self.epochs):
             # get episodes
             l_obs, l_act, l_rew, l_next_obs, l_done = self.get_episodes()
             # update q
@@ -107,7 +108,11 @@ class DQN(object):
                         .format(\
                         np.mean(eval_r), eval_solves, \
                         np.sum(eval_steps), eval_trials))
-                while np.mean(eval_r) > 20 or eval_solves/eval_trials >= 0.8: 
+                if eval_solves/ eval_trials < 0.15 and self.difficuly >= 1:
+                    self.difficulty -= 1
+                    print("decrementing difficulty to ".format(\
+                            self.difficulty))
+                while eval_solves/eval_trials >= 0.75: 
                     self.difficulty += 1
                     print("incrementing difficulty to {}"\
                             .format(self.difficulty))
@@ -124,11 +129,15 @@ class DQN(object):
                 for param in self.qt.parameters():
                     param.requires_grad = False
             if epoch % 100 == 0:
-                torch.save(self.q.state_dict(), "q_weights_{}x{}_pt2.h5".format(\
-                        self.hid_dim[0],self.hid_dim[1]))
+                torch.save(self.q.state_dict(), "results/q_weights_exp{}_start{}_pt2.h5"\
+                        .format(exp_name, start_epoch))
 
                 
-                np.save("rewards_02_pt2.npy", np.array(self.rewards))
+                np.save("./results/exp{}_rewards_start{}.npy"\
+                        .format(exp_name, start_epoch), np.array(self.rewards))
+
+        
+        torch.save(self.q.state_dict(), "q_weights_exp{}.h5".format(exp_name))
 
     def evaluate(self, trials, difficulty=None):
     
@@ -198,12 +207,8 @@ class DQN(object):
         l_act = torch.Tensor()
         l_next_obs = torch.Tensor()
         l_done = torch.Tensor()
-        if self.difficulty == 1:
-            max_moves = 3
-        elif self.difficulty == 2:
-            max_moves = 8
-        else:
-            max_moves = 64
+
+        max_moves = 64
 
         done = True
         with torch.no_grad():
@@ -253,9 +258,15 @@ if __name__ == "__main__":
     print(args)
     time.sleep(3)
     epochs = 1
+    start_epoch = 0
+    exp_name = "default"
     for cc in range(len(args)):
         if args[cc] == "--epochs":
             epochs = int(args[cc+1])
+        elif args[cc] == "--exp_name":
+            exp_name = str(args[cc+1])
+        elif args[cc] == "--start":
+            start_epoch = int(args[cc+1])
 
     env = Cube()
     #env = gym.make("CartPole-v0")
@@ -267,8 +278,6 @@ if __name__ == "__main__":
     act_dim = env.action_dim #Cube.action_space.sample().shape
     #obs_dim = 4
     #act_dim = 2
-    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[64,64], epochs=epochs)
+    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[256,128,64], epochs=epochs)
 
-    if (1): torch.set_num_threads(3) 
-
-    dqn.train()
+    dqn.train(exp_name, start_epoch)

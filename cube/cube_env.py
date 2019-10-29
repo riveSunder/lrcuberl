@@ -14,7 +14,7 @@ class Cube():
         def call(self):
             return self.obs_dim
         
-    def __init__(self, difficulty=10):
+    def __init__(self, difficulty=10, obs_mode="mlp"):
 
         self.cube = np.zeros((3,3,6))
         self.action_dim = 12
@@ -24,10 +24,13 @@ class Cube():
         self.action_space = self.ActionSpace(self.action_dim)
         self.observation_space = self.ObservationSpace(self.obs_dim)
 
+        self.obs_mode = obs_mode 
         _ = self.reset()
 
 
     def reset(self, difficulty=None):
+
+        self.moves = 0
 
         if difficulty is not None:
             self.difficulty = difficulty
@@ -40,6 +43,13 @@ class Cube():
             self.step(self.get_random_action())
 
         return self.categorical_cube()
+
+    def set_difficulty(self, difficulty, verbose=True):
+        if difficulty == self.difficulty:
+            pass
+        else:
+            if verbose: print("changing difficulty from {} to {}".format(self.difficulty, difficulty))
+            self.difficulty = difficulty
 
     def step(self, action):
         """
@@ -74,12 +84,14 @@ class Cube():
         info = {}
         done = self.is_solved()
 
+        self.moves += 1
         if done:
-            reward = 32
+            reward = 26.0 + np.max([(26.0 - self.moves),0.0])
         else:
-            reward = -1.0
+            reward = 0.0
 
-        observation = self.categorical_cube()
+        if self.obs_mode == "mlp":
+            observation = self.categorical_cube()
 
         return observation, reward, done, info
 
