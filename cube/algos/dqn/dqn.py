@@ -11,6 +11,7 @@ import gym
 
 from cube.cube_env import Cube
 from cube.policies.mlp import MLP
+from cube.utils.test_policy import test_policy
 
 import gc
 
@@ -136,8 +137,16 @@ class DQN(object):
                 np.save("./results/exp{}_rewards_start{}.npy"\
                         .format(exp_name, start_epoch), np.array(self.rewards))
 
+        fpath = "q_weights_exp{}.h5".format(exp_name)
+
+        torch.save(self.q.state_dict(),fpath)
+
+        results = test_policy(self.env, self.obs_dim, self.act_dim,\
+            self.hid_dim, fpath=fpath)
         
-        torch.save(self.q.state_dict(), "q_weights_exp{}.h5".format(exp_name))
+        np.save("./results/{}/test_{}_epoch{}.npy".format(exp_name,exp_name,\
+                epoch),results)
+
 
     def evaluate(self, trials, difficulty=None):
     
@@ -153,7 +162,7 @@ class DQN(object):
             total_reward = 0.0
             while not done:
                 if render: 
-                    env.render()
+                    self.env.render()
                     time.sleep(0.05)
                 obs = torch.Tensor(obs.ravel()).unsqueeze(0)
                 q_values = self.q(obs)
@@ -171,6 +180,7 @@ class DQN(object):
                     done = True
             total_moves.append(cube_moves)
             total_rewards.append(total_reward)
+
 
         return total_rewards, solves, total_moves
 

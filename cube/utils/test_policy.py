@@ -17,7 +17,7 @@ def test_policy(env, obs_dim, act_dim, hid_dim, act=nn.Tanh, fpath=None):
         q.load_state_dict(torch.load(fpath))                                                 
 
     solves = 0
-    max_moves = 1000
+    max_moves = 260
     trials = 100
     
     results = {"difficulty": [],\
@@ -54,6 +54,8 @@ def test_policy(env, obs_dim, act_dim, hid_dim, act=nn.Tanh, fpath=None):
                     done = True
             
             total_moves.append(cube_moves)
+        if solves < 1:
+            break
 
         print("{} solves of {} at difficulty {}, max moves {}".format(solves, trials, difficulty, max_moves))
 
