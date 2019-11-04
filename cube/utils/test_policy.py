@@ -17,7 +17,7 @@ def test_policy(env, obs_dim, act_dim, hid_dim, act=nn.Tanh, fpath=None):
         q.load_state_dict(torch.load(fpath))                                                 
 
     solves = 0
-    max_moves = 260
+    max_moves = 1080
     trials = 100
     
     results = {"difficulty": [],\
@@ -28,7 +28,7 @@ def test_policy(env, obs_dim, act_dim, hid_dim, act=nn.Tanh, fpath=None):
             "max_steps": max_moves
                     }
 
-    for difficulty in range(26):
+    for difficulty in range(1,26):
         env.set_difficulty(difficulty)
         solves = 0
         for trial in range(trials):
@@ -54,8 +54,6 @@ def test_policy(env, obs_dim, act_dim, hid_dim, act=nn.Tanh, fpath=None):
                     done = True
             
             total_moves.append(cube_moves)
-        if solves < 1:
-            break
 
         print("{} solves of {} at difficulty {}, max moves {}".format(solves, trials, difficulty, max_moves))
 
@@ -65,6 +63,8 @@ def test_policy(env, obs_dim, act_dim, hid_dim, act=nn.Tanh, fpath=None):
         results["solve_percent"].extend([solves])
         results["solve_length"].append(total_moves)
 
+        if solves < 1:
+            break
 
     return results
 
@@ -76,9 +76,9 @@ if __name__ == "__main__":
     obs_dim = env.observation_space.call()
     obs_dim = obs_dim[0]*obs_dim[1]
     act_dim = env.action_dim #Cube.action_space.sample().shape
-    hid_dim = [64,64]
-    fpath = "results/mlp64x64/q_weights_exp2layerMLP_start18018_pt2.h5"
+    hid_dim = [256,128,64]
+    fpath = "q_weights_expmlp256x128x64.h5"
 
     results = test_policy(env, obs_dim, act_dim, hid_dim, act=nn.Tanh, fpath=fpath)
 
-    np.save("./results/mlp64x64/test_18018.npy",results)
+    np.save("./results/mlp256x128x64test_20000.npy",results)
