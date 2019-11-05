@@ -15,26 +15,36 @@ class Cube2():
             return self.obs_dim
 
 
-    def __init__(self, difficulty=10, obs_mode="mlp"):
-        self.cube = np.zeros((2,2,6))
+    def __init__(self, difficulty=10, obs_mode="mlp", use_target=False):
         self.action_dim = 12
-        self.obs_dim = (24, 6)
+        if use_target:
+            self.obs_dim = (24, 12)
+        else:
+            self.obs_dim = (24, 6)
 
         self.difficulty = difficulty
         self.action_space = self.ActionSpace(self.action_dim)
         self.observation_space = self.ObservationSpace(self.obs_dim)
 
         self.obs_mode = obs_mode 
+        self.use_target = use_target
+
         _ = self.reset()
 
 
     def reset(self, difficulty=None):
 
+        self.cube = np.zeros((2,2,6))
         self.moves = 0
 
         if difficulty is not None:
             self.difficulty = difficulty
 
+        if self.use_target:
+            self.target = np.zeros((2,2,6))
+            for face in range(6):
+                self.target[..., face] = face
+            
         for face in range(6):
             self.cube[...,face] = face
 
@@ -79,7 +89,7 @@ class Cube2():
 
         self.moves += 1
         if done:
-            reward = 26.0 + np.max([(26.0 - self.moves),0.0])
+            reward = 26.0 
         else:
             reward = 0.0
 
@@ -104,6 +114,18 @@ class Cube2():
         for idx in range(len(flat_cube)):
             categorical_cube[idx,int(flat_cube[idx])] = 1.
 
+        if self.use_target:
+            categorical_target = np.zeros((24,6))
+            flat_target = np.copy(self.target.ravel())
+
+            # convert to one-hot embedding
+            for idx in range(len(flat_target)):
+                categorical_target[idx, int(flat_target[idx])] = 1.
+
+            categorical_cube = np.append(categorical_cube,\
+                    categorical_target,\
+                    axis=0)
+        
         return categorical_cube
 
     def is_solved(self):
@@ -120,21 +142,23 @@ class Cube2():
         return np.random.randint(self.action_dim)
         
     
-    def display_cube(self):
+    def display_cube(self, target=False):
     
+        cube = self.target if target else self.cube
+
         scoot = 7
         print('\n')
         for row in range(2):
-            print(' ' * scoot + str(self.cube[row,:,0]) + ' ' * scoot) # Up
+            print(' ' * scoot + str(cube[row,:,0]) + ' ' * scoot) # Up
         
         for long_row in range(2):
-            print(str(self.cube[long_row,:,1])+\
-            str(self.cube[long_row,:,2])+\
-            str(self.cube[long_row,:,3])+\
-            str(self.cube[long_row,:,4]))
+            print(str(cube[long_row,:,1])+\
+            str(cube[long_row,:,2])+\
+            str(cube[long_row,:,3])+\
+            str(cube[long_row,:,4]))
 
         for row in range(2):
-            print(' ' * scoot + str(self.cube[row,:,5]) + ' ' * scoot) # Up
+            print(' ' * scoot + str(cube[row,:,5]) + ' ' * scoot) # Up
 
 
     def F(self):
@@ -844,7 +868,7 @@ class Cube():
 
 if __name__ == "__main__":
 
-    env = Cube2(difficulty = 1)
+    env = Cube2(difficulty = 1, use_target=True)
     obs = env.reset()
 
     import pdb; pdb.set_trace()
