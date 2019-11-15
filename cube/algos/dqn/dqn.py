@@ -26,7 +26,7 @@ class DQN(object):
         self.env = env
         
         # hyperparameters
-        self.min_eps = torch.Tensor(np.array(0.07))
+        self.min_eps = torch.Tensor(np.array(0.02))
         self.eps = torch.Tensor(np.array(0.9))
         self.eps_decay = torch.Tensor(np.array(0.95))
         self.lr = 1e-3
@@ -42,9 +42,10 @@ class DQN(object):
         # action-value networks
         self.q = MLP(obs_dim, act_dim, hid_dim=hid_dim, act=nn.Tanh)# act=nn.Tanh)
         try:
-            if (1): 
-                self.q.load_state_dict(torch.load("q_weights_exp{}.h5"\
-                    .format(exp_name)))
+            fpath = "q_weights_exp{}.h5".format(exp_name) 
+            print("should now restoring weights from: ", fpath) 
+            self.q.load_state_dict(torch.load(fpath))
+            print("restoring weights from: ", fpath) 
         except:
             pass
         self.qt = MLP(obs_dim, act_dim, hid_dim=hid_dim, act=nn.Tanh) # act=nn.Tanh)
@@ -109,7 +110,7 @@ class DQN(object):
                         .format(\
                         np.mean(eval_r), eval_solves, \
                         np.sum(eval_steps), eval_trials))
-                if eval_solves/ eval_trials < 0.15 and self.difficuly >= 1:
+                if eval_solves/ eval_trials < 0.15 and self.difficulty >= 1:
                     self.difficulty -= 1
                     print("decrementing difficulty to ".format(\
                             self.difficulty))
@@ -138,7 +139,7 @@ class DQN(object):
                         .format(exp_name, start_epoch), np.array(self.rewards))
 
         fpath = "q_weights_exp{}.h5".format(exp_name)
-
+        print("saving weights to ", fpath)
         torch.save(self.q.state_dict(),fpath)
 
         results = test_policy(self.env, self.obs_dim, self.act_dim,\
@@ -153,7 +154,7 @@ class DQN(object):
         total_rewards = []
         total_moves = []
         solves = 0
-        max_moves = 200 
+        max_moves = 540 
         render = False #True
         for trial in range(trials):
             done = False
@@ -218,7 +219,7 @@ class DQN(object):
         l_next_obs = torch.Tensor()
         l_done = torch.Tensor()
 
-        max_moves = 64
+        max_moves = 540
 
         done = True
         with torch.no_grad():
@@ -288,6 +289,6 @@ if __name__ == "__main__":
     act_dim = env.action_dim #Cube.action_space.sample().shape
     #obs_dim = 4
     #act_dim = 2
-    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[256,128,64], epochs=epochs)
+    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[256,256], epochs=epochs)
 
     dqn.train(exp_name, start_epoch)

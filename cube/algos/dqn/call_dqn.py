@@ -9,8 +9,8 @@ args = parser.parse_args()
 
 exp_name = args.exp_name
 
-epochs = 1001
-max_epochs = 30000
+epochs = 4
+max_epochs = 20
 
 for start_epoch in range(0, max_epochs, epochs):
     os.system("python ./cube/algos/dqn/dqn.py --epochs {} --exp_name {} --start {}"\
