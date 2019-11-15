@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class LSTMPolicy(nn.Module):
+class LSTM(nn.Module):
 
     def __init__(self, input_size, output_size, hidden_size, bf=1.0, bn=0.0, device="cpu"):
         super(LSTMPolicy, self).__init__()
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     obs_dim = 36
     act_dim = 12
 
-    policy = LSTMPolicy(obs_dim, act_dim, hid_dim)
+    policy = LSTM(obs_dim, act_dim, hid_dim)
 
 
     x = np.random.randn(1,1000,obs_dim) + 1e-1 * np.arange(1000)[np.newaxis,:,np.newaxis] 
