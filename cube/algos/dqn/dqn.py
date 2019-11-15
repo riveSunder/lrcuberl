@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 import gym
 
-from cube.cube_env import Cube, Cube2
+from cube.cube_env import Cube, Cube2, Cube1
 from cube.policies.mlp import MLP
 from cube.utils.test_policy import test_policy
 
@@ -126,6 +126,10 @@ class DQN(object):
                         .format(\
                         np.mean(eval_r), eval_solves, \
                         np.sum(eval_steps), eval_trials))
+                    if self.difficulty > 5 and eval_solves/eval_trials >= 0.95:
+                        print("cube probelm is solved")
+                        break
+
 
                 self.qt.load_state_dict(copy.deepcopy(self.q.state_dict()))
                 for param in self.qt.parameters():
@@ -154,7 +158,7 @@ class DQN(object):
         total_rewards = []
         total_moves = []
         solves = 0
-        max_moves = 540 
+        max_moves = 10 
         render = False #True
         for trial in range(trials):
             done = False
@@ -219,7 +223,7 @@ class DQN(object):
         l_next_obs = torch.Tensor()
         l_done = torch.Tensor()
 
-        max_moves = 540
+        max_moves = 10
 
         done = True
         with torch.no_grad():
@@ -279,16 +283,16 @@ if __name__ == "__main__":
         elif args[cc] == "--start":
             start_epoch = int(args[cc+1])
 
-    env = Cube2()
+    env = Cube1()
     #env = gym.make("CartPole-v0")
 
     torch.set_num_threads(1)
 
-    obs_dim = env.observation_space.call()
+    obs_dim = env.observation_space.shape
     obs_dim = obs_dim[0]*obs_dim[1]
     act_dim = env.action_dim #Cube.action_space.sample().shape
     #obs_dim = 4
     #act_dim = 2
-    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[256,256], epochs=epochs)
+    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[32,32], epochs=epochs)
 
     dqn.train(exp_name, start_epoch)
