@@ -27,7 +27,7 @@ class DQN(object):
         
         # hyperparameters
         self.min_eps = torch.Tensor(np.array(0.02))
-        self.eps = torch.Tensor(np.array(0.09))
+        self.eps = torch.Tensor(np.array(0.9))
         self.eps_decay = torch.Tensor(np.array(0.95))
         self.lr = 1e-3
         self.batch_size = 256
@@ -219,7 +219,7 @@ class DQN(object):
         l_next_obs = torch.Tensor()
         l_done = torch.Tensor()
 
-        max_moves = int(self.difficulty*1.2)
+        max_moves = 540
 
         done = True
         with torch.no_grad():
@@ -289,6 +289,6 @@ if __name__ == "__main__":
     act_dim = env.action_dim #Cube.action_space.sample().shape
     #obs_dim = 4
     #act_dim = 2
-    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[64,64], epochs=epochs)
+    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[256,256], epochs=epochs)
 
     dqn.train(exp_name, start_epoch)
