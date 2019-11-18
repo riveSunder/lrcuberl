@@ -4,7 +4,7 @@ from gym import spaces
 
 class Cube1():
     def __init__(self, difficulty=4, obs_mode="mlp", use_target=False, scramble_actions=False):
-        self.action_dim = 4
+        self.action_dim = 6
 
         if use_target:
             self.obs_dim = (6, 12)
@@ -19,13 +19,9 @@ class Cube1():
         self.obs_mode = obs_mode 
         self.use_target = use_target
 
-
-        self.action_dict = {0: self.U, 1: self.u,
-                2: self.L, 3: self.l,
-                4: self.F, 5: self.f,
-                6: self.R, 7: self.r,
-                8: self.B, 9: self.b,
-                10: self.D, 11: self.d}
+        self.action_dict = {0: self.F, 1: self.B,
+                2: self.L, 3: self.R,
+                4: self.U, 5: self.D}
 
         _ = self.reset()
 
@@ -157,17 +153,6 @@ class Cube1():
 
         self.cube = new_cube
 
-    def f(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,2] = self.cube[:,:,2]
-        new_cube[:,:,1] = self.cube[:,:,0]
-        new_cube[:,:,0] = self.cube[:,:,3] 
-        new_cube[:,:,3] = self.cube[:,:,5] 
-        new_cube[:,:,5] = self.cube[:,:,1]
-    
-        self.cube = new_cube
-
     def U(self):
         new_cube = np.copy(self.cube)
 
@@ -177,18 +162,6 @@ class Cube1():
         new_cube[:,:,2] = self.cube[:,:,3] 
         new_cube[:,:,3] = self.cube[:,:,4] 
         new_cube[:,:,4] = self.cube[:,:,1]
-
-        self.cube = new_cube
-
-    def u(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,0] = self.cube[:,:,0]
-
-        new_cube[:,:,2] = self.cube[:,:,1]
-        new_cube[:,:,3] = self.cube[:,:,2] 
-        new_cube[:,:,4] = self.cube[:,:,3] 
-        new_cube[:,:,1] = self.cube[:,:,4]
 
         self.cube = new_cube
 
@@ -204,18 +177,6 @@ class Cube1():
 
         self.cube = new_cube
 
-    def d(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,5] = self.cube[:,:,5]
-
-        new_cube[:,:,2] = self.cube[:,:,1]
-        new_cube[:,:,3] = self.cube[:,:,2] 
-        new_cube[:,:,4] = self.cube[:,:,3] 
-        new_cube[:,:,1] = self.cube[:,:,4]
-
-        self.cube = new_cube
-
     def B(self):
         new_cube = np.copy(self.cube)
 
@@ -225,18 +186,6 @@ class Cube1():
         new_cube[:,:,5] = self.cube[:,:,1] 
         new_cube[:,:,1] = self.cube[:,:,0] 
         new_cube[:,:,0] = self.cube[:,:,3]
-
-        self.cube = new_cube
-
-    def b(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,4] = self.cube[:,:,4]
-
-        new_cube[:,:,5] = self.cube[:,:,3]
-        new_cube[:,:,1] = self.cube[:,:,5] 
-        new_cube[:,:,0] = self.cube[:,:,1] 
-        new_cube[:,:,3] = self.cube[:,:,0]
 
         self.cube = new_cube
 
@@ -252,18 +201,6 @@ class Cube1():
 
         self.cube = new_cube
 
-    def l(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,1] = self.cube[:,:,1]
-
-        new_cube[:,:,2] = self.cube[:,:,5]
-        new_cube[:,:,0] = self.cube[:,:,2] 
-        new_cube[:,:,4] = self.cube[:,:,0] 
-        new_cube[:,:,5] = self.cube[:,:,4]
-
-        self.cube = new_cube
-
     def R(self):
         new_cube = np.copy(self.cube)
 
@@ -276,31 +213,7 @@ class Cube1():
 
         self.cube = new_cube
 
-    def r(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,3] = self.cube[:,:,3]
-
-        new_cube[:,:,5] = self.cube[:,:,2]
-        new_cube[:,:,2] = self.cube[:,:,0] 
-        new_cube[:,:,0] = self.cube[:,:,4] 
-        new_cube[:,:,4] = self.cube[:,:,5]
-
-        self.cube = new_cube
-
 class Cube2():
-    class ActionSpace():
-        def __init__(self, act_dim):
-            self.act_dim = act_dim
-        def sample(self):
-            return np.random.randint(self.act_dim)
-                
-    class ObservationSpace():
-        def __init__(self, obs_dim):
-            self.obs_dim = obs_dim
-        def call(self):
-            return self.obs_dim
-
 
     def __init__(self, difficulty=10, obs_mode="mlp", use_target=False):
         self.action_dim = 12
@@ -310,12 +223,19 @@ class Cube2():
             self.obs_dim = (24, 6)
 
         self.difficulty = difficulty
-        self.action_space = self.ActionSpace(self.action_dim)
-        self.observation_space = self.ObservationSpace(self.obs_dim)
+        self.action_space = spaces.Discrete(self.action_dim)
+        self.observation_space = spaces.Box(0, 1, shape=self.obs_dim, dtype=np.int16)
 
         self.obs_mode = obs_mode 
         self.use_target = use_target
 
+        self.action_dict = {0: self.F, 1: self.f,\
+                2: self.L, 3: self.l,\
+                4: self.R, 5: self.r,\
+                6: self.B, 7: self.b,\
+                8: self.U, 9: self.u,\
+                10: self.D, 11: self.d,\
+                }
         _ = self.reset()
 
 
@@ -346,30 +266,8 @@ class Cube2():
         available actions are F, R, L, U, D, B 
         and their reverses
         """
-        if action == 0:
-            self.U()
-        elif action == 1:
-            self.L()
-        elif action == 2:
-            self.F()
-        elif action == 3:
-            self.R()
-        elif action == 4:
-            self.B()
-        elif action == 5:
-            self.D()
-        elif action == 6:
-            self.u()
-        elif action == 7:
-            self.l()
-        elif action == 8:
-            self.f()
-        elif action == 9:
-            self.r()
-        elif action == 10:
-            self.b()
-        elif action == 11:
-            self.d()
+
+        self.action_dict[action]()
         
         info = {}
         done = self.is_solved()
@@ -418,10 +316,10 @@ class Cube2():
     def is_solved(self):
 
         for face in range(6):
-            solve = self.cube[1,1,face] * np.ones_like(self.cube[:,:,face])
-            if np.max(np.abs(solve - self.cube[:,:,face])) > 0:
-                return False
-            
+            for ii in range(self.cube.shape[0]):
+                for jj in range(self.cube.shape[1]):
+                    if self.cube[ii,jj,face] != self.target[ii,jj,face]:
+                        return False
 
         return True
 
@@ -733,29 +631,27 @@ class Cube2():
 
 
 class Cube():
-    class ActionSpace():
-        def __init__(self, act_dim):
-            self.act_dim = act_dim
-        def sample(self):
-            return np.random.randint(self.act_dim)
-                
-    class ObservationSpace():
-        def __init__(self, obs_dim):
-            self.obs_dim = obs_dim
-        def call(self):
-            return self.obs_dim
-        
-    def __init__(self, difficulty=10, obs_mode="mlp"):
+
+    def __init__(self, difficulty=10, obs_mode="mlp", use_target=False):
 
         self.cube = np.zeros((3,3,6))
         self.action_dim = 12
         self.obs_dim = (54, 6)
 
         self.difficulty = difficulty
-        self.action_space = self.ActionSpace(self.action_dim)
-        self.observation_space = self.ObservationSpace(self.obs_dim)
+        self.action_space = spaces.Discrete(self.action_dim)
+        self.observation_space = spaces.Box(0, 1, shape=self.obs_dim, dtype=np.int16)
 
+        self.use_target = use_target
         self.obs_mode = obs_mode 
+
+        self.action_dict = {0: self.F, 1: self.f,\
+                2: self.L, 3: self.l,\
+                4: self.R, 5: self.r,\
+                6: self.B, 7: self.b,\
+                8: self.U, 9: self.u,\
+                10: self.D, 11: self.d,\
+                }
         _ = self.reset()
 
 
@@ -766,6 +662,11 @@ class Cube():
         if difficulty is not None:
             self.difficulty = difficulty
 
+        self.target = np.zeros((3,3,6))
+        for face in range(6):
+            self.target[..., face] = face
+            
+        self.cube = np.zeros((3,3,6))
         for face in range(6):
             self.cube[...,face] = face
 
@@ -787,30 +688,7 @@ class Cube():
         available actions are F, R, L, U, D, B 
         and their reverses
         """
-        if action == 0:
-            self.U()
-        elif action == 1:
-            self.L()
-        elif action == 2:
-            self.F()
-        elif action == 3:
-            self.R()
-        elif action == 4:
-            self.B()
-        elif action == 5:
-            self.D()
-        elif action == 6:
-            self.u()
-        elif action == 7:
-            self.l()
-        elif action == 8:
-            self.f()
-        elif action == 9:
-            self.r()
-        elif action == 10:
-            self.b()
-        elif action == 11:
-            self.d()
+        self.action_dict[action]()
         
         info = {}
         done = self.is_solved()
@@ -835,15 +713,27 @@ class Cube():
         for idx in range(len(flat_cube)):
             categorical_cube[idx,int(flat_cube[idx])] = 1.
 
+        if self.use_target:
+            categorical_target = np.zeros((54,6))
+            flat_target = np.copy(self.target.ravel())
+
+            # convert to one-hot embedding
+            for idx in range(len(flat_target)):
+                categorical_target[idx, int(flat_target[idx])] = 1.
+
+            categorical_cube = np.append(categorical_cube,\
+                    categorical_target,\
+                    axis=0)
+        
         return categorical_cube
 
     def is_solved(self):
 
         for face in range(6):
-            solve = self.cube[1,1,face] * np.ones_like(self.cube[:,:,face])
-            if np.max(np.abs(solve - self.cube[:,:,face])) > 0:
-                return False
-            
+            for ii in range(self.cube.shape[0]):
+                for jj in range(self.cube.shape[1]):
+                    if self.cube[ii,jj,face] != self.target[ii,jj,face]:
+                        return False
 
         return True
 
@@ -1155,23 +1045,8 @@ class Cube():
 
 if __name__ == "__main__":
 
-    env = Cube1(difficulty = 4, use_target=True, scramble_actions=True)
-    obs = env.reset()
-
-    import pdb; pdb.set_trace()
-    done = False
-    steps = []
-    for cc in range(1000):
-        step = 0
-        done = False
-        while not done:
-            _ = env.reset()
-            obs, reward, done, info = env.step(env.action_space.sample()) 
-            step += 1
-        print("guessed solving move once in {}".format(step))
-        steps.append(step)
-
-    avg_step = np.mean(steps)
-    std_step = np.std(steps)
-    print("done: {}, reward: {}, avg trials before solve {}+/-{} std dev. ".format(done,reward, avg_step, std_step))
-    env.display_cube()
+    for env_maker in [Cube, Cube2, Cube1]:
+        env = env_maker(difficulty = 10, use_target=True)
+        env.display_cube()
+        env.step(env.action_space.sample())
+        env.display_cube()
