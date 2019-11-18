@@ -7,7 +7,7 @@ import torch.nn.functional as F
 class LSTM(nn.Module):
 
     def __init__(self, input_size, output_size, hidden_size, bf=1.0, bn=0.0, device="cpu"):
-        super(LSTM, self).__init__()
+        super(LSTMPolicy, self).__init__()
 
 
         # policy parameters
@@ -95,6 +95,7 @@ if __name__ == "__main__":
     for jj in range(10):
         for ii in range(x.shape[1]):
             action, y_pred, h = policy.get_actions(x[:,ii])
+            y_pred, h = policy.forward(x[:,ii])
             loss = torch.mean((y_pred - y[:,ii,:])**2)
 
             if ii % x.shape[1] == 0:
