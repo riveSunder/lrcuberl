@@ -14,7 +14,7 @@ class Cube1():
         self.difficulty = difficulty
         self.scramble_actions = scramble_actions
         self.action_space = spaces.Discrete(self.action_dim)
-        self.observation_space = spaces.Box(0, 1, shape=self.obs_dim, dtype=np.int16)
+        self.observation_space = spaces.Box(0, 1, shape=self.obs_dim)
 
         self.obs_mode = obs_mode 
         self.use_target = use_target
@@ -224,7 +224,7 @@ class Cube2():
 
         self.difficulty = difficulty
         self.action_space = spaces.Discrete(self.action_dim)
-        self.observation_space = spaces.Box(0, 1, shape=self.obs_dim, dtype=np.int16)
+        self.observation_space = spaces.Box(0, 1, shape=self.obs_dim)
 
         self.obs_mode = obs_mode 
         self.use_target = use_target
@@ -640,7 +640,7 @@ class Cube():
 
         self.difficulty = difficulty
         self.action_space = spaces.Discrete(self.action_dim)
-        self.observation_space = spaces.Box(0, 1, shape=self.obs_dim, dtype=np.int16)
+        self.observation_space = spaces.Box(0, 1, shape=self.obs_dim)
 
         self.use_target = use_target
         self.obs_mode = obs_mode 
