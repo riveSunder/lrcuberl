@@ -4,7 +4,7 @@ from gym import spaces
 
 class Cube1():
     def __init__(self, difficulty=4, obs_mode="mlp", use_target=False, scramble_actions=False):
-        self.action_dim = 4
+        self.action_dim = 6
 
         if use_target:
             self.obs_dim = (6, 12)
@@ -19,13 +19,9 @@ class Cube1():
         self.obs_mode = obs_mode 
         self.use_target = use_target
 
-
-        self.action_dict = {0: self.U, 1: self.u,
-                2: self.L, 3: self.l,
-                4: self.F, 5: self.f,
-                6: self.R, 7: self.r,
-                8: self.B, 9: self.b,
-                10: self.D, 11: self.d}
+        self.action_dict = {0: self.F, 1: self.B,
+                2: self.L, 3: self.R,
+                4: self.U, 5: self.D}
 
         _ = self.reset()
 
@@ -157,17 +153,6 @@ class Cube1():
 
         self.cube = new_cube
 
-    def f(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,2] = self.cube[:,:,2]
-        new_cube[:,:,1] = self.cube[:,:,0]
-        new_cube[:,:,0] = self.cube[:,:,3] 
-        new_cube[:,:,3] = self.cube[:,:,5] 
-        new_cube[:,:,5] = self.cube[:,:,1]
-    
-        self.cube = new_cube
-
     def U(self):
         new_cube = np.copy(self.cube)
 
@@ -177,18 +162,6 @@ class Cube1():
         new_cube[:,:,2] = self.cube[:,:,3] 
         new_cube[:,:,3] = self.cube[:,:,4] 
         new_cube[:,:,4] = self.cube[:,:,1]
-
-        self.cube = new_cube
-
-    def u(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,0] = self.cube[:,:,0]
-
-        new_cube[:,:,2] = self.cube[:,:,1]
-        new_cube[:,:,3] = self.cube[:,:,2] 
-        new_cube[:,:,4] = self.cube[:,:,3] 
-        new_cube[:,:,1] = self.cube[:,:,4]
 
         self.cube = new_cube
 
@@ -204,18 +177,6 @@ class Cube1():
 
         self.cube = new_cube
 
-    def d(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,5] = self.cube[:,:,5]
-
-        new_cube[:,:,2] = self.cube[:,:,1]
-        new_cube[:,:,3] = self.cube[:,:,2] 
-        new_cube[:,:,4] = self.cube[:,:,3] 
-        new_cube[:,:,1] = self.cube[:,:,4]
-
-        self.cube = new_cube
-
     def B(self):
         new_cube = np.copy(self.cube)
 
@@ -225,18 +186,6 @@ class Cube1():
         new_cube[:,:,5] = self.cube[:,:,1] 
         new_cube[:,:,1] = self.cube[:,:,0] 
         new_cube[:,:,0] = self.cube[:,:,3]
-
-        self.cube = new_cube
-
-    def b(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,4] = self.cube[:,:,4]
-
-        new_cube[:,:,5] = self.cube[:,:,3]
-        new_cube[:,:,1] = self.cube[:,:,5] 
-        new_cube[:,:,0] = self.cube[:,:,1] 
-        new_cube[:,:,3] = self.cube[:,:,0]
 
         self.cube = new_cube
 
@@ -252,18 +201,6 @@ class Cube1():
 
         self.cube = new_cube
 
-    def l(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,1] = self.cube[:,:,1]
-
-        new_cube[:,:,2] = self.cube[:,:,5]
-        new_cube[:,:,0] = self.cube[:,:,2] 
-        new_cube[:,:,4] = self.cube[:,:,0] 
-        new_cube[:,:,5] = self.cube[:,:,4]
-
-        self.cube = new_cube
-
     def R(self):
         new_cube = np.copy(self.cube)
 
@@ -273,18 +210,6 @@ class Cube1():
         new_cube[:,:,0] = self.cube[:,:,2] 
         new_cube[:,:,4] = self.cube[:,:,0] 
         new_cube[:,:,5] = self.cube[:,:,4]
-
-        self.cube = new_cube
-
-    def r(self):
-        new_cube = np.copy(self.cube)
-
-        new_cube[:,:,3] = self.cube[:,:,3]
-
-        new_cube[:,:,5] = self.cube[:,:,2]
-        new_cube[:,:,2] = self.cube[:,:,0] 
-        new_cube[:,:,0] = self.cube[:,:,4] 
-        new_cube[:,:,4] = self.cube[:,:,5]
 
         self.cube = new_cube
 
