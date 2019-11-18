@@ -229,6 +229,13 @@ class Cube2():
         self.obs_mode = obs_mode 
         self.use_target = use_target
 
+        self.action_dict = {0: self.F, 1: self.f,\
+                2: self.L, 3: self.l,\
+                4: self.R, 5: self.r,\
+                6: self.B, 7: self.b,\
+                8: self.U, 9: self.u,\
+                10: self.D, 11: self.d,\
+                }
         _ = self.reset()
 
 
@@ -259,30 +266,8 @@ class Cube2():
         available actions are F, R, L, U, D, B 
         and their reverses
         """
-        if action == 0:
-            self.U()
-        elif action == 1:
-            self.L()
-        elif action == 2:
-            self.F()
-        elif action == 3:
-            self.R()
-        elif action == 4:
-            self.B()
-        elif action == 5:
-            self.D()
-        elif action == 6:
-            self.u()
-        elif action == 7:
-            self.l()
-        elif action == 8:
-            self.f()
-        elif action == 9:
-            self.r()
-        elif action == 10:
-            self.b()
-        elif action == 11:
-            self.d()
+
+        self.action_dict[action]()
         
         info = {}
         done = self.is_solved()
@@ -659,6 +644,14 @@ class Cube():
 
         self.use_target = use_target
         self.obs_mode = obs_mode 
+
+        self.action_dict = {0: self.F, 1: self.f,\
+                2: self.L, 3: self.l,\
+                4: self.R, 5: self.r,\
+                6: self.B, 7: self.b,\
+                8: self.U, 9: self.u,\
+                10: self.D, 11: self.d,\
+                }
         _ = self.reset()
 
 
@@ -695,30 +688,7 @@ class Cube():
         available actions are F, R, L, U, D, B 
         and their reverses
         """
-        if action == 0:
-            self.U()
-        elif action == 1:
-            self.L()
-        elif action == 2:
-            self.F()
-        elif action == 3:
-            self.R()
-        elif action == 4:
-            self.B()
-        elif action == 5:
-            self.D()
-        elif action == 6:
-            self.u()
-        elif action == 7:
-            self.l()
-        elif action == 8:
-            self.f()
-        elif action == 9:
-            self.r()
-        elif action == 10:
-            self.b()
-        elif action == 11:
-            self.d()
+        self.action_dict[action]()
         
         info = {}
         done = self.is_solved()

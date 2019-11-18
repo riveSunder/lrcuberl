@@ -2,6 +2,7 @@
 
 * ~~Start a TODO list~~
 
+* ~~Use action space dictionary instead of flow control for assigning action to functions~~
 * ~~Update observation space to use `Box` (compatibility with OpenAI Gym).~~ (However sampling embedded categorical observation space is not supported yet)
 * ~~Update action spaces to use `Discrete` class from `spaces` (compatibility with OpenAI Gym)~~
 * ~~Add `use_target` flag to all environments (make hindsight experience replay possible)~~
