@@ -45,7 +45,7 @@ class Cube1():
             self.step(self.get_random_action())
 
         if self.scramble_actions:
-            for aa in range(2):
+            for aa in range(1):
                 swap_move = 2 * np.random.randint(0,int(self.action_dim/2))
                 self.swap_actions(swap_move, swap_move+1)
 
@@ -256,7 +256,7 @@ class Cube2():
             self.cube[...,face] = face
 
         # Scramble cube
-        for cc in range(self.difficulty):
+        for cc in range(np.max([1, np.random.randint(self.difficulty)])):
             self.step(self.get_random_action())
 
         return self.categorical_cube()
@@ -671,7 +671,7 @@ class Cube():
             self.cube[...,face] = face
 
         # Scramble cube
-        for cc in range(self.difficulty):
+        for cc in range(np.max([1,np.random.randint(self.difficulty)])):
             self.step(self.get_random_action())
 
         return self.categorical_cube()
@@ -695,7 +695,7 @@ class Cube():
 
         self.moves += 1
         if done:
-            reward = 26.0 + np.max([(26.0 - self.moves),0.0])
+            reward = 26.0 
         else:
             reward = 0.0
 

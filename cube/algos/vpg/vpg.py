@@ -42,13 +42,22 @@ class VPG(object):
         optimizer = torch.optim.Adam(self.policy.parameters(), lr=self.lr)
 
         total_steps = 0
+        results = {}
+
+        results["epoch_rewards"] = []
+        results["epoch_loss"] = []
+        results["epoch_solves"] = []
+        results["epoch_attempts"] = [] 
+        results["total_env_interacts"] = []
+
         for epoch in range(self.epochs):
             self.policy.h = self.policy.init_hidden()
             self.policy.cell = self.policy.init_cell()
             self.policy.zero_grad()
 
-            observations, rewards, dones, actions, probabilities = \
-                    self.get_trajectory()
+            observations, rewards, dones, actions, probabilities,\
+                    solves, attempts, steps = self.get_trajectory() 
+            total_steps += steps
             all_advs = self.compute_advantages(rewards, dones)
 
             surr_loss = self.compute_surr_loss(probabilities, actions, all_advs)
@@ -60,8 +69,22 @@ class VPG(object):
 
             optimizer.step()
 
+            results["epoch_rewards"].append(torch.sum(rewards))
+            results["epoch_loss"].append(surr_loss)
+            results["epoch_solves"].append(solves)
+            results["epoch_attempts"].append(attempts)
+            results["total_env_interacts"].append(total_steps)
+            
+            if solves / attempts > 0.85:
+                print("incrementing difficulty from {} to {}".format(\
+                        self.env.difficulty, self.env.difficulty+1))
+                self.env.difficulty += 1
+            elif solves / attempts < .05:
+                self.env.difficulty = np.max([1,self.env.difficulty-1])
             if epoch % 50 == 0:
                 torch.save(self.policy.state_dict(), "current_lstm.py")
+                np.save("results/{}/{}.npy".format(exp_name,exp_name),results)
+
     
     def get_trajectory(self):
 
@@ -74,6 +97,9 @@ class VPG(object):
         probabilities = torch.Tensor()
         actions = torch.Tensor()
         dones = torch.Tensor()
+        
+        attempts = 0
+        solves = 0
 
         while step < self.steps_per_epoch:
 
@@ -81,8 +107,9 @@ class VPG(object):
                 self.policy.h = self.policy.init_hidden()
                 self.policy.cell = self.policy.init_cell()
                 obs = self.env.reset()
-
+                attempts += 1
                 obs = torch.Tensor(obs.ravel()).unsqueeze(0)
+                done=False
                 if(0):
                     if self.using_lstm:
                         h = self.policy.init_hidden()
@@ -90,7 +117,9 @@ class VPG(object):
 
 
             action, probs, h = self.policy.get_actions(obs)
+
             obs, reward, done, info = env.step(action.detach().numpy()[0,0]) 
+            if done: solves += 1
 
             obs = torch.tensor(obs.ravel(), dtype=torch.float).unsqueeze(0)
 
@@ -105,10 +134,12 @@ class VPG(object):
                     action.clone().detach(), dtype=torch.float)], dim=0)
             dones = torch.cat([dones, torch.tensor((done,),dtype=torch.float)],\
                     dim=0)
-            if step < env.difficulty*2: done = True
             step += 1
 
-        return observations, rewards, dones, actions, probabilities 
+            if step > self.env.difficulty*3: done = True
+
+        return observations, rewards, dones, actions,\
+                probabilities, solves, attempts, step
 
     def compute_advantages(self, all_rewards, all_dones, discount=0.9, baseline=None):
         all_advs = torch.zeros_like(all_rewards)
@@ -140,14 +171,17 @@ class VPG(object):
 if __name__ == "__main__":
     
         
-    env = Cube2(difficulty=1, use_target=True)#, scramble_actions=True)
+    env = Cube2(difficulty=1, use_target=True) #, scramble_actions=True)
     
     act_dim = env.action_space.n
     obs_dim = env.observation_space.shape
+    obs  = env.reset()
+    obs_dim = obs.shape
     input_dim = obs_dim[0] * obs_dim[1]
-    hid_dim = 32
+    hid_dim = 512
 
     policy = LSTM(input_dim, act_dim, hid_dim)
 
     vpg = VPG(env, policy, obs_dim=input_dim, act_dim=act_dim, epochs=10000, steps_per_epoch=1000)
-    vpg.train("my_exp", 0) 
+
+    vpg.train("default", 0) 
