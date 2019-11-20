@@ -19,7 +19,7 @@ import sys
 
 class VPG(object):
 
-    def __init__(self, env, policy, value_fn=None, obs_dim=72, act_dim=6, hid_dim=64, epochs=100, steps_per_epoch=1000):
+    def __init__(self, env, policy, value_fn=None, obs_dim=72, act_dim=6, hid_dim=64, epochs=100, steps_per_epoch=1000, ablate_memory=False):
 
         # learning params
         self.epochs = epochs
@@ -28,6 +28,7 @@ class VPG(object):
         self.device = torch.device("cpu")
         self.discount = 0.995
         self.difficulty = 1
+        self.ablate_memory = ablate_memory
 
         self.obs_dim = obs_dim
         self.act_dim = act_dim
@@ -70,20 +71,30 @@ class VPG(object):
             optimizer.step()
 
             results["epoch_rewards"].append(torch.sum(rewards))
-            results["epoch_loss"].append(surr_loss)
+            results["epoch_loss"].append(surr_loss.detach().numpy())
             results["epoch_solves"].append(solves)
             results["epoch_attempts"].append(attempts)
             results["total_env_interacts"].append(total_steps)
             
-            if solves / attempts > 0.85:
-                print("incrementing difficulty from {} to {}".format(\
-                        self.env.difficulty, self.env.difficulty+1))
-                self.env.difficulty += 1
-            elif solves / attempts < .05:
-                self.env.difficulty = np.max([1,self.env.difficulty-1])
+            del(observations)
+            del(rewards)
+            del(dones)
+            del(actions)
+            del(probabilities)
+            
+
+            if(0):
+                if solves / attempts > 0.85:
+                    print("incrementing difficulty from {} to {}".format(\
+                            self.env.difficulty, self.env.difficulty+1))
+                    self.env.difficulty += 1
+                elif solves / attempts < .05:
+                    self.env.difficulty = np.max([1,self.env.difficulty-1])
             if epoch % 50 == 0:
-                torch.save(self.policy.state_dict(), "current_lstm.py")
-                np.save("results/{}/{}.npy".format(exp_name,exp_name),results)
+                torch.save(self.policy.state_dict(), \
+                        "results/scrambles1x1/{}_lstm_weights.h5"\
+                        .format(exp_name))
+                np.save("results/scrambles1x1/{}.npy".format(exp_name),results)
 
     
     def get_trajectory(self):
@@ -102,6 +113,10 @@ class VPG(object):
         solves = 0
 
         while step < self.steps_per_epoch:
+
+            if self.ablate_memory:
+                self.policy.h = self.policy.init_hidden()
+                self.policy.cell = self.policy.init_cell()
 
             if done:
                 self.policy.h = self.policy.init_hidden()
@@ -136,7 +151,7 @@ class VPG(object):
                     dim=0)
             step += 1
 
-            if step > self.env.difficulty*3: done = True
+            #if step > self.env.difficulty*3: done = True
 
         return observations, rewards, dones, actions,\
                 probabilities, solves, attempts, step
@@ -168,20 +183,77 @@ class VPG(object):
 
         return surr_loss
         
+def test_policy(policy, exp_name, ablate_memory=False):
+    # test meta-learning capabilities with action choice swaps in the middle of test time
+
+    max_steps = 500
+    env = Cube1(difficulty=10, use_target=True)
+    done = True
+    test_results = {}
+
+    test_results["swaps"] = []
+    test_results["rewards"] = []
+    test_results["step"] = []
+    test_results["obs"] = []
+    test_results["next_obs"] = []
+    test_results["action"] = []
+    test_results["dones"] = []
+    step = 0 
+
+    print("Testing policy")
+    while step < max_steps:
+        if ablate_memory:
+            policy.h = policy.init_hidden()
+            policy.cell = policy.init_cell()
+        if step % 50 == 0:
+            for move in (0, env.action_dim-2, 2):
+                env.swap_actions(move, move+1)
+            test_results["swaps"].append(1)
+            print("swapping, previous 50 steps includes {} solves"\
+                    .format(np.sum(test_results["dones"][-50:])))
+        else:
+            test_results["swaps"].append(0)
+        if done:
+            obs = env.reset()
+            obs = torch.tensor(obs.ravel(), dtype=torch.float).unsqueeze(0)
+
+        action, probs, h = policy.get_actions(obs)
+        old_obs = obs
+        obs, reward, done, info = env.step(action.detach().numpy()[0,0]) 
+        obs = torch.tensor(obs.ravel(), dtype=torch.float).unsqueeze(0)
+
+        step += 1
+
+        test_results["rewards"].append(reward)
+        test_results["step"].append(step)
+        test_results["obs"].append(old_obs)
+        test_results["next_obs"].append(obs)    
+        test_results["action"].append(action)
+        test_results["dones"].append(done)
+
+    np.save("results/scrambles1x1/{}_test_policy.npy".format(exp_name), test_results)
+
 if __name__ == "__main__":
     
-        
-    env = Cube2(difficulty=1, use_target=True) #, scramble_actions=True)
-    
-    act_dim = env.action_space.n
-    obs_dim = env.observation_space.shape
-    obs  = env.reset()
-    obs_dim = obs.shape
-    input_dim = obs_dim[0] * obs_dim[1]
-    hid_dim = 512
+    for my_seed in [0,1,2]:
+        torch.manual_seed(my_seed)
+        np.random.seed(my_seed)
+        for scramble_actions in [True, False]:
+            for ablate_memory in [True, False]:
+                env = Cube1(difficulty=10, use_target=True, scramble_actions=scramble_actions)
+                
+                act_dim = env.action_space.n
+                obs_dim = env.observation_space.shape
+                obs  = env.reset()
+                obs_dim = obs.shape
+                input_dim = obs_dim[0] * obs_dim[1]
+                hid_dim = 32 
 
-    policy = LSTM(input_dim, act_dim, hid_dim)
+                policy = LSTM(input_dim, act_dim, hid_dim)
 
-    vpg = VPG(env, policy, obs_dim=input_dim, act_dim=act_dim, epochs=10000, steps_per_epoch=1000)
+                vpg = VPG(env, policy, obs_dim=input_dim, act_dim=act_dim, epochs=1000, steps_per_epoch=1000, ablate_memory=ablate_memory)
+                exp_name = "scrambles1x1{}_memory{}_seed{}"\
+                        .format(scramble_actions, not(ablate_memory), my_seed)
+                vpg.train(exp_name, 0) 
 
-    vpg.train("default", 0) 
+                test_policy(vpg.policy, exp_name, ablate_memory=ablate_memory)
