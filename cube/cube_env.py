@@ -215,7 +215,8 @@ class Cube1():
 
 class Cube2():
 
-    def __init__(self, difficulty=10, obs_mode="mlp", use_target=False):
+    def __init__(self, difficulty=10, obs_mode="mlp", use_target=False, \
+            scramble_actions=False):
         self.action_dim = 12
         if use_target:
             self.obs_dim = (24, 12)
@@ -226,6 +227,7 @@ class Cube2():
         self.action_space = spaces.Discrete(self.action_dim)
         self.observation_space = spaces.Box(0, 1, shape=self.obs_dim)
 
+        self.scramble_actions = scramble_actions
         self.obs_mode = obs_mode 
         self.use_target = use_target
 
@@ -259,7 +261,22 @@ class Cube2():
         for cc in range(np.max([1, np.random.randint(self.difficulty)])):
             self.step(self.get_random_action())
 
+        if self.scramble_actions:
+            for aa in range(1):
+                swap_move = 2 * np.random.randint(0,int(self.action_dim/2))
+                self.swap_actions(swap_move, swap_move+1)
+
         return self.categorical_cube()
+
+    def swap_actions(self, action_a, action_b):
+       
+
+        move_a = self.action_dict[action_a]
+        move_b = self.action_dict[action_b]
+
+        self.action_dict[action_b] = move_a
+        self.action_dict[action_a] = move_b
+
 
     def step(self, action):
         """
@@ -632,7 +649,8 @@ class Cube2():
 
 class Cube():
 
-    def __init__(self, difficulty=10, obs_mode="mlp", use_target=False):
+    def __init__(self, difficulty=10, obs_mode="mlp", use_target=False,\
+            scramble_actions=False):
 
         self.cube = np.zeros((3,3,6))
         self.action_dim = 12
@@ -641,7 +659,8 @@ class Cube():
         self.difficulty = difficulty
         self.action_space = spaces.Discrete(self.action_dim)
         self.observation_space = spaces.Box(0, 1, shape=self.obs_dim)
-
+        
+        self.scramble_actions = scramble_actions
         self.use_target = use_target
         self.obs_mode = obs_mode 
 
@@ -674,7 +693,21 @@ class Cube():
         for cc in range(np.max([1,np.random.randint(self.difficulty)])):
             self.step(self.get_random_action())
 
+        if self.scramble_actions:
+            for aa in range(1):
+                swap_move = 2 * np.random.randint(0,int(self.action_dim/2))
+                self.swap_actions(swap_move, swap_move+1)
+
         return self.categorical_cube()
+
+    def swap_actions(self, action_a, action_b):
+       
+
+        move_a = self.action_dict[action_a]
+        move_b = self.action_dict[action_b]
+
+        self.action_dict[action_b] = move_a
+        self.action_dict[action_a] = move_b
 
     def set_difficulty(self, difficulty, verbose=True):
         if difficulty == self.difficulty:
