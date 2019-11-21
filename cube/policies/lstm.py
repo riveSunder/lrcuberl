@@ -53,8 +53,9 @@ class LSTM(nn.Module):
         h = torch.mul(torch.tanh(self.cell), output)
         y = self.hid2y(h)
 
-        y = F.softmax(F.dropout(y/temp, p=dropout_rate, training=training_mode),\
+        y = F.softmax(F.relu(y/temp),\
                 dim=1)
+
         self.h = h
 
         return y, h
