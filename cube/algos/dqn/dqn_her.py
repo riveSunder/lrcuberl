@@ -9,7 +9,7 @@ import torch.nn.functional as F
 
 import gym
 
-from cube.cube_env import Cube, Cube2, Cube1
+from cube.cube_env import Cube, Cube2
 from cube.policies.mlp import MLP
 from cube.utils.test_policy import test_policy
 
@@ -32,7 +32,7 @@ class DQN(object):
         self.lr = 1e-3
         self.batch_size = 256
         self.steps_per_epoch = 5200 
-        self.update_qt = 200 #100
+        self.update_qt = 50 #100
         self.epochs = epochs
         self.device = torch.device("cpu")
         self.discount = 0.995
@@ -126,10 +126,6 @@ class DQN(object):
                         .format(\
                         np.mean(eval_r), eval_solves, \
                         np.sum(eval_steps), eval_trials))
-                    if self.difficulty > 5 and eval_solves/eval_trials >= 0.95:
-                        print("cube probelm is solved")
-                        break
-
 
                 self.qt.load_state_dict(copy.deepcopy(self.q.state_dict()))
                 for param in self.qt.parameters():
@@ -158,7 +154,7 @@ class DQN(object):
         total_rewards = []
         total_moves = []
         solves = 0
-        max_moves = 10 
+        max_moves = 540 
         render = False #True
         for trial in range(trials):
             done = False
@@ -223,7 +219,7 @@ class DQN(object):
         l_next_obs = torch.Tensor()
         l_done = torch.Tensor()
 
-        max_moves = 10
+        max_moves = int(self.difficulty*3)
 
         done = True
         with torch.no_grad():
@@ -248,9 +244,6 @@ class DQN(object):
                 obs = torch.Tensor(obs.ravel()).unsqueeze(0)
 
                 cube_moves += 1
-                if cube_moves > max_moves:
-                    # give up if we've gone too far from start
-                    done = True
 
                 # concatenate data from current step to buffers
                 l_obs = torch.cat([l_obs, prev_obs], dim=0)
@@ -260,9 +253,36 @@ class DQN(object):
                         .reshape(1,1)], dim=0)
                 l_done = torch.cat([l_done, torch.Tensor(np.array(1.0*done))\
                         .reshape(1,1)], dim=0)
-
                 l_next_obs = torch.cat([l_next_obs, obs], dim=0)
 
+                if cube_moves > max_moves and not done:
+                    l_done[-1] = 1.0 
+                    # implement HER
+                    # Whatever the current state is, that's what we meant to do.
+                    # Copy the experience
+                    temp_l_obs = l_obs[-cube_moves:].clone().detach()
+                    temp_l_rew = l_rew[-cube_moves:].clone().detach()
+                    temp_l_act = l_act[-cube_moves:].clone().detach()
+                    temp_l_done = l_done[-cube_moves:].clone().detach()
+                    temp_l_next_obs = l_next_obs[-cube_moves:].clone().detach()
+    
+                    # Apply rose-tinted glasses
+                    target_half = int(obs.shape[-1]/2)
+                    rose_target = obs[:, target_half:]
+                    for replay_step in range(0,cube_moves):
+                        temp_l_next_obs[replay_step, target_half:] = rose_target
+                        temp_l_obs[replay_step, target_half:] = rose_target
+
+                    temp_l_done[-1] = 1.0
+                    temp_l_rew[-1] = 26. 
+                    
+                    done = True
+
+                    l_obs = torch.cat([l_obs, temp_l_obs], dim=0)
+                    l_rew = torch.cat([l_rew, temp_l_rew], dim=0)
+                    l_act = torch.cat([l_act, temp_l_act], dim=0)
+                    l_done = torch.cat([l_done, temp_l_done], dim=0)
+                    l_next_obs = torch.cat([l_next_obs, temp_l_next_obs], dim=0)
                 
         return l_obs, l_act, l_rew, l_next_obs, l_done
 
@@ -283,16 +303,16 @@ if __name__ == "__main__":
         elif args[cc] == "--start":
             start_epoch = int(args[cc+1])
 
-    env = Cube1()
+    env = Cube2(use_target=True)
     #env = gym.make("CartPole-v0")
 
     torch.set_num_threads(1)
 
-    obs_dim = env.observation_space.shape
+    obs_dim = env.observation_space.call()
     obs_dim = obs_dim[0]*obs_dim[1]
     act_dim = env.action_dim #Cube.action_space.sample().shape
     #obs_dim = 4
     #act_dim = 2
-    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[32,32], epochs=epochs)
+    dqn = DQN(env, obs_dim=obs_dim, act_dim=act_dim, hid_dim=[64,64,64], epochs=epochs)
 
     dqn.train(exp_name, start_epoch)
